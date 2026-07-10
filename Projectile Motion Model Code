@@ -1,0 +1,126 @@
+import numpy 
+import matplotlib.pyplot as plt
+#Validate Mass so input is greater than 0kg
+while True:
+    mass = float(input("Please enter the mass of the projectile in kg"))
+    if mass > 0:
+        break
+    else:
+        print("Error: Mass must be greater than 0") 
+            
+#Validate Cross Sectional Area so input is greater than 0m^2
+while True:
+    cross_sectional_area = float(input("Please enter the cross sectional area of the projectile in m^2"))
+    if cross_sectional_area > 0:
+        break
+    else:
+        print("Error: Cross sectional area must be greater than 0") 
+
+
+#Validate launch velocity so input is greater than 0 ms^-1
+while True:
+    launch_velocity = float(input("Please enter the launch velocity of the projectile in m/s"))
+    if launch_velocity > 0:
+        break
+    else:
+        print("Error: launch velocity must be greater than 0") 
+
+while True:
+    theta = float(input("Please enter the launch angle in degrees"))
+    if 0 <= theta <= 90:
+        break
+    else:
+        print("Error: Launch angle must be between 0 and 90 degrees")   
+#Setting up constants
+g = 9.81 #acceleration in ms^-2 due to gravity
+rho = 1.225 #air density in kgm^-3
+mu = 0.47 #drag coefficient
+
+#simulating projectile motion
+def simulate_projectile(mass,cross_sectional_area,launch_velocity,theta,g,rho,mu):
+    #set starting positions and time-stamps
+    x, y = 0.0, 0.0
+    dt = 0.01 #10 milliseconds per calculation step
+    #list stores the coordinates at each time-stamp
+    x_coordinate = [x]
+    y_coordinate = [y]
+    #Converting launch angle to radians
+    theta_rad = numpy.radians(theta)
+    
+    #Initial velocity components
+    vx = launch_velocity * numpy.cos(theta_rad)
+    vy = launch_velocity * numpy.sin(theta_rad)
+    while y >= 0:
+        #calculating magnitude of instantaneous velocity
+        v= numpy.sqrt(vx**2 + vy**2)
+        #Prevent division by 0 is object stops moving
+        if v==0:
+            break
+        #Fluid drag force formula
+        f_drag = 0.5 * rho * (v**2) * mu *cross_sectional_area
+        #Splitting drag force into x and y components
+        fx_drag = f_drag * (vx/v)
+        fy_drag = f_drag * (vy/v)
+        #Using f=ma, acceleration in x and y components is variable as air resistance is not ignored
+        ax = -fx_drag/mass
+        ay = -g - (fy_drag/mass)
+
+        #Updating velocities for the next time-stamp
+        vx += ax*dt
+        vy += ay*dt
+        #Updating position of the projectile
+        x += vx*dt
+        y += vy*dt
+        #Appending the array while the projectile hasn't hit the ground
+        x_coordinate.append(x)
+        y_coordinate.append(y)
+
+    return x_coordinate, y_coordinate    
+
+#Running the simulation 
+x_data, y_data = simulate_projectile(mass, cross_sectional_area, launch_velocity, theta, g, rho, mu)
+
+#Plotting the graph
+plt.figure(figsize=(10,5))
+plt.plot(x_data, y_data, label="Trajectory", color = "red", linewidth=2)
+plt.title("Projectile motion trajectory", fontsize=14, fontweight='bold')
+plt.xlabel("Horizontal Distance(m)")
+plt.ylabel("Vertical Height(m)")
+plt.xlim(0,200)
+plt.ylim(0,50)
+plt.grid(True, linestyle ="--", alpha=0.6)
+plt.legend()
+plt.show()
+
+max_height = round(max(y_data),2)
+max_distance = round(x_data[-1],2)
+
+#Menu
+print(f"Maximum height above the ground is {max_height} metres")
+
+print(f"Maximum horizontal distance is {max_distance} metres")
+
+print("1. Find height above the ground at a specific horizontal distance")
+
+print("2. Find horizontal distance a specific height above the ground")
+
+choice = input("Choose an option (1 or 2)")
+if choice == "1":
+    target_x = float(input("Enter a horizontal distance in metres"))
+    if 0 <= target_x <= max_distance:
+        #Interpolate y based on x
+        desired_height = round(numpy.interp(target_x, x_data, y_data),1)
+        print(f"At a distance of {target_x} metres, the projectile is {desired_height} metres above the ground")
+    else:
+        print("Error: Horizontal distance falls outside the range")
+elif choice == "2":
+    target_y = float(input("Enter a vertical height in metres"))
+    if 0 <= target_y <= max_height:
+        #Interpolate x based on y
+        desired_distance = round(numpy.interp(target_y, x_data, y_data),1)
+        print(f"At a height of {target_y} metres, the projectile is {desired_distance} metres away from the launch site")
+    else:
+        print("Error: Vertical height falls outside the range")
+    
+
+
